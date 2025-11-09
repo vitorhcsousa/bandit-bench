@@ -1,13 +1,13 @@
 from typing import Any
 
 import numpy as np
+from cb_comparison.data.dataset import MessageDataset
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
-from cb_comparison.core.base import BaseContextualBandit
-from cb_comparison.data.dataset import MessageDataset
-from cb_comparison.evaluation.metrics import MetricsCalculator
+from core import BaseContextualBandit
+from evaluation.metrics import MetricsCalculator
 
 
 class BanditSimulator:

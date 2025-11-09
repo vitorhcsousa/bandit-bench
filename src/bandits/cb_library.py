@@ -1,4 +1,4 @@
-from typing import Any, Optional, Tuple
+from typing import Any
 
 import numpy as np
 from contextualbandits.online import (
@@ -30,7 +30,7 @@ class ContextualBanditsWrapper(ContextualBandit):
         exploration_algorithm: str = "linucb",
         alpha: float = 1.0,
         epsilon: float = 0.1,
-        beta_prior: Optional[Tuple[Tuple[float, float], int]] = None,
+        beta_prior: tuple[tuple[float, float], int] | None = None,
         n_samples: int = 10,
         **model_params: Any,
     ) -> None:
@@ -101,14 +101,14 @@ class ContextualBanditsWrapper(ContextualBandit):
     def predict(
         self,
         context: NDArray[np.float64],
-    ) -> Tuple[int, NDArray[np.float64]]:
+    ) -> tuple[int, NDArray[np.float64]]:
         """Select an action using the model's policy.
 
         Args:
             context: Context feature vector of shape (n_features,).
 
         Returns:
-            Tuple containing selected action index and action scores.
+            tuple containing selected action index and action scores.
         """
         context_2d = context.reshape(1, -1)
 

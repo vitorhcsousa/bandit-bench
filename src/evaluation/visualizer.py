@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd  # type: ignore[import-untyped]
 import seaborn as sns  # type: ignore[import-untyped]
 
-from cb_comparison.evaluation.metrics import MetricsCalculator
+from evaluation.metrics import MetricsCalculator
 
 
 class ResultsVisualizer:
@@ -64,7 +64,6 @@ class ResultsVisualizer:
         n_bandits = len(self.metrics_calculator.metrics)
         fig, axes = plt.subplots(1, n_bandits, figsize=(5 * n_bandits, 5))
 
-        # `axes` pode ser um único Axes ou uma lista/array de Axes: normalizar para list[Axes]
         if n_bandits == 1:
             axes_list: list[plt.Axes] = [cast(plt.Axes, axes)]
         else:

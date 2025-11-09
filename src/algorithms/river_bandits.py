@@ -3,7 +3,7 @@ from typing import Literal
 import numpy as np
 from river import linear_model, optim
 
-from cb_comparison.core.base import BaseContextualBandit, Context, Feedback
+from core.base import BaseContextualBandit, Context, Feedback
 
 
 class RiverBandit(BaseContextualBandit):

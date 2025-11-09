@@ -5,7 +5,7 @@ from typing import Any, Literal
 import numpy as np
 from vowpalwabbit import pyvw  # type: ignore[import-untyped]
 
-from cb_comparison.core.base import BaseContextualBandit, Context, Feedback
+from core.base import BaseContextualBandit, Context, Feedback
 
 
 class VowpalWabbitBandit(BaseContextualBandit):

@@ -1,33 +1,45 @@
-from typing import Any, List, Optional, Tuple
+from typing import Any, Optional
 
+import lightning as L
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.optim as optim
 from numpy.typing import NDArray
+from torch.optim import Adam
 
 from .base import ContextualBandit
 
 
-class NeuralBanditModel(nn.Module):
-    """Neural network model for contextual bandits.
+class NeuralBanditModel(L.LightningModule):
+    """Lightning neural network model for contextual bandits.
 
     A simple feedforward neural network that maps context features to
     action values for each arm.
 
     Attributes:
         layers: Sequential neural network layers.
+        learning_rate: Learning rate for optimizer.
     """
 
-    def __init__(self, input_dim: int, n_actions: int, hidden_dims: List[int]) -> None:
+    def __init__(
+        self,
+        input_dim: int,
+        n_actions: int,
+        hidden_dims: list[int],
+        learning_rate: float = 0.001,
+    ) -> None:
         """Initialize the neural bandit model.
 
         Args:
             input_dim: Dimension of input context features.
             n_actions: Number of actions/arms.
-            hidden_dims: List of hidden layer dimensions.
+            hidden_dims: list of hidden layer dimensions.
+            learning_rate: Learning rate for optimizer.
         """
         super().__init__()
+        self.save_hyperparameters()
+
+        self.learning_rate = learning_rate
 
         layer_dims = [input_dim] + hidden_dims + [n_actions]
         layers = []
@@ -38,6 +50,7 @@ class NeuralBanditModel(nn.Module):
                 layers.append(nn.ReLU())
 
         self.layers = nn.Sequential(*layers)
+        self.criterion = nn.MSELoss()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass through the network.
@@ -50,18 +63,44 @@ class NeuralBanditModel(nn.Module):
         """
         return self.layers(x)
 
+    def training_step(self, batch: tuple[torch.Tensor, int, float], batch_idx: int) -> torch.Tensor:
+        """Lightning training step.
+
+        Args:
+            batch: tuple of (context, action, reward).
+            batch_idx: Batch index.
+
+        Returns:
+            Loss tensor.
+        """
+        context, action, reward = batch
+        q_values = self(context)
+        predicted_value = q_values[0, action]
+        target = torch.tensor([reward], dtype=torch.float32, device=self.device)
+
+        loss = self.criterion(predicted_value, target)
+        self.log("train_loss", loss, prog_bar=True)
+        return loss
+
+    def configure_optimizers(self) -> Adam:
+        """Configure optimizer.
+
+        Returns:
+            Adam optimizer.
+        """
+        return Adam(self.parameters(), lr=self.learning_rate)
+
 
 class PyTorchBandit(ContextualBandit):
-    """PyTorch-based contextual bandit with various exploration strategies.
+    """Lightning-based contextual bandit with various exploration strategies.
 
-    Implements contextual bandits using neural networks with support for
+    Implements contextual bandits using Lightning neural networks with support for
     multiple exploration algorithms including epsilon-greedy, UCB, and
     Thompson sampling.
 
     Attributes:
-        model: Neural network model.
-        optimizer: PyTorch optimizer.
-        criterion: Loss function.
+        model: Lightning neural network model.
+        trainer: Lightning trainer for model updates.
         device: Device for computation (CPU/GPU).
         epsilon: Exploration parameter for epsilon-greedy.
         ucb_alpha: Confidence parameter for UCB.
@@ -74,20 +113,20 @@ class PyTorchBandit(ContextualBandit):
         n_actions: int,
         input_dim: int,
         exploration_algorithm: str = "epsilon-greedy",
-        hidden_dims: Optional[List[int]] = None,
+        hidden_dims: Optional[list[int]] = None,
         learning_rate: float = 0.001,
         epsilon: float = 0.1,
         ucb_alpha: float = 2.0,
         device: Optional[str] = None,
         **model_params: Any,
     ) -> None:
-        """Initialize PyTorch contextual bandit.
+        """Initialize Lightning PyTorch contextual bandit.
 
         Args:
             n_actions: Number of available actions.
             input_dim: Dimension of context features.
             exploration_algorithm: Exploration strategy ('epsilon-greedy', 'ucb', 'thompson').
-            hidden_dims: List of hidden layer dimensions. Defaults to [64, 32].
+            hidden_dims: list of hidden layer dimensions. Defaults to [64, 32].
             learning_rate: Learning rate for optimizer.
             epsilon: Exploration parameter for epsilon-greedy.
             ucb_alpha: Confidence parameter for UCB.
@@ -102,11 +141,19 @@ class PyTorchBandit(ContextualBandit):
         self.epsilon = epsilon
         self.ucb_alpha = ucb_alpha
 
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        self.device_type = device or ("cuda" if torch.cuda.is_available() else "cpu")
 
-        self.model = NeuralBanditModel(input_dim, n_actions, self.hidden_dims).to(self.device)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
-        self.criterion = nn.MSELoss()
+        self.model = NeuralBanditModel(input_dim, n_actions, self.hidden_dims, learning_rate)
+
+        self.trainer = L.Trainer(
+            max_epochs=1,
+            accelerator="auto",
+            devices=1,
+            enable_progress_bar=False,
+            enable_model_summary=False,
+            logger=False,
+            enable_checkpointing=False,
+        )
 
         self.action_counts = np.zeros(n_actions)
         self.action_values = np.zeros(n_actions)
@@ -115,19 +162,19 @@ class PyTorchBandit(ContextualBandit):
     def predict(
         self,
         context: NDArray[np.float64],
-    ) -> Tuple[int, NDArray[np.float64]]:
+    ) -> tuple[int, NDArray[np.float64]]:
         """Select an action using the specified exploration strategy.
 
         Args:
             context: Context feature vector of shape (n_features,).
 
         Returns:
-            Tuple containing selected action index and action scores.
+            tuple containing selected action index and action scores.
         """
         self.model.eval()
 
         with torch.no_grad():
-            context_tensor = torch.FloatTensor(context).unsqueeze(0).to(self.device)
+            context_tensor = torch.FloatTensor(context).unsqueeze(0)
             q_values = self.model(context_tensor).cpu().numpy().flatten()
 
         if self.exploration_algorithm == "epsilon-greedy":
@@ -156,16 +203,15 @@ class PyTorchBandit(ContextualBandit):
         """
         self.model.train()
 
-        context_tensor = torch.FloatTensor(context).unsqueeze(0).to(self.device)
-        target = torch.FloatTensor([reward]).to(self.device)
+        context_tensor = torch.FloatTensor(context).unsqueeze(0)
+        batch = (context_tensor, action, reward)
 
-        self.optimizer.zero_grad()
-        q_values = self.model(context_tensor)
-        predicted_value = q_values[0, action]
-
-        loss = self.criterion(predicted_value, target)
+        self.model.zero_grad()
+        loss = self.model.training_step(batch, 0)
         loss.backward()
-        self.optimizer.step()
+
+        optimizer = self.model.configure_optimizers()
+        optimizer.step()
 
         self.action_counts[action] += 1
         self.action_values[action] += (reward - self.action_values[action]) / self.action_counts[
@@ -176,10 +222,20 @@ class PyTorchBandit(ContextualBandit):
 
     def reset(self) -> None:
         """Reset the bandit to initial state."""
-        self.model = NeuralBanditModel(self.input_dim, self.n_actions, self.hidden_dims).to(
-            self.device
+        self.model = NeuralBanditModel(
+            self.input_dim, self.n_actions, self.hidden_dims, self.learning_rate
         )
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
+
+        self.trainer = L.Trainer(
+            max_epochs=1,
+            accelerator="auto",
+            devices=1,
+            enable_progress_bar=False,
+            enable_model_summary=False,
+            logger=False,
+            enable_checkpointing=False,
+        )
+
         self.action_counts = np.zeros(self.n_actions)
         self.action_values = np.zeros(self.n_actions)
         self.timestep = 0

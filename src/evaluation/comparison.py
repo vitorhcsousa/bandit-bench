@@ -1,12 +1,13 @@
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any
 
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from ..bandits.base import ContextualBandit
-from ..data.dataset import MessageFeedbackDataset
+from bandits.base import ContextualBandit
+from data import MessageFeedbackDataset
+
 from .metrics import BanditMetrics
 
 
@@ -35,8 +36,8 @@ class BanditComparison:
 
     Attributes:
         dataset: Dataset generator for contexts and rewards.
-        experiments: List of experiment configurations.
-        results: Dictionary storing results for each experiment.
+        experiments: list of experiment configurations.
+        results: dictionary storing results for each experiment.
     """
 
     def __init__(
@@ -52,8 +53,8 @@ class BanditComparison:
         """
         self.dataset = dataset
         self.random_seed = random_seed
-        self.experiments: List[ExperimentConfig] = []
-        self.results: Dict[str, Dict[str, Any]] = {}
+        self.experiments: list[ExperimentConfig] = []
+        self.results: dict[str, dict[str, Any]] = {}
 
         np.random.seed(random_seed)
 
@@ -81,7 +82,7 @@ class BanditComparison:
         self,
         config: ExperimentConfig,
         show_progress: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run a single experiment.
 
         Args:
@@ -89,7 +90,7 @@ class BanditComparison:
             show_progress: Whether to show progress bar.
 
         Returns:
-            Dictionary containing experiment results and metrics.
+            dictionary containing experiment results and metrics.
         """
         metrics = BanditMetrics()
         bandit = config.bandit
@@ -140,7 +141,7 @@ class BanditComparison:
             self.results[config.name] = result
 
             summary = result["metrics"].get_summary()
-            print(f"\nResults:")
+            print("\nResults:")
             print(f"  Total Reward: {summary['total_reward']:.2f}")
             print(f"  Average Regret: {summary['average_regret']:.4f}")
             print(f"  Cumulative Regret: {summary['cumulative_regret']:.2f}")

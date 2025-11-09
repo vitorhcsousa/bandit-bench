@@ -1,4 +1,4 @@
-from typing import Any, Tuple
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
@@ -62,14 +62,14 @@ class RiverBandit(ContextualBandit):
     def predict(
         self,
         context: NDArray[np.float64],
-    ) -> Tuple[int, NDArray[np.float64]]:
+    ) -> tuple[int, NDArray[np.float64]]:
         """Select an action using the specified exploration strategy.
 
         Args:
             context: Context feature vector of shape (n_features,).
 
         Returns:
-            Tuple containing selected action index and predicted values.
+            tuple containing selected action index and predicted values.
         """
         context_dict = {f"x{i}": float(v) for i, v in enumerate(context)}
 

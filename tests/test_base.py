@@ -1,7 +1,7 @@
 import numpy as np
-
-from cb_comparison.core.base import Context, Feedback
 from cb_comparison.data.dataset import DatasetConfig, MessageDataset
+
+from core import Context, Feedback
 
 
 def test_context_creation() -> None:

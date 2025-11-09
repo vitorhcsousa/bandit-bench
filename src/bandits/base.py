@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Tuple
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
@@ -39,14 +39,14 @@ class ContextualBandit(ABC):
     def predict(
         self,
         context: NDArray[np.float64],
-    ) -> Tuple[int, NDArray[np.float64]]:
+    ) -> tuple[int, NDArray[np.float64]]:
         """Select an action based on the context.
 
         Args:
             context: Context feature vector of shape (n_features,) or (batch_size, n_features).
 
         Returns:
-            Tuple containing:
+            tuple containing:
                 - Selected action index
                 - Action probabilities/scores for all actions
         """
@@ -73,7 +73,7 @@ class ContextualBandit(ABC):
         """Reset the bandit to initial state."""
         pass
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         """Get information about the bandit configuration.
 
         Returns:

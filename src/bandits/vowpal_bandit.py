@@ -1,4 +1,4 @@
-from typing import Any, Tuple
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
@@ -69,14 +69,14 @@ class VowpalWabbitBandit(ContextualBandit):
     def predict(
         self,
         context: NDArray[np.float64],
-    ) -> Tuple[int, NDArray[np.float64]]:
+    ) -> tuple[int, NDArray[np.float64]]:
         """Select an action using VW's exploration strategy.
 
         Args:
             context: Context feature vector of shape (n_features,).
 
         Returns:
-            Tuple containing selected action index and action probabilities.
+            tuple containing selected action index and action probabilities.
         """
         if self.exploration_algorithm in ["bag", "cover", "regcb"]:
             return self._predict_adf(context)
@@ -86,29 +86,25 @@ class VowpalWabbitBandit(ContextualBandit):
     def _predict_simple(
         self,
         context: NDArray[np.float64],
-    ) -> Tuple[int, NDArray[np.float64]]:
+    ) -> tuple[int, NDArray[np.float64]]:
         """Predict using simple CB format.
 
         Args:
             context: Context feature vector.
 
         Returns:
-            Tuple containing selected action and action probabilities.
+            tuple containing selected action and action probabilities.
         """
         context_str = " ".join([f"{i}:{v}" for i, v in enumerate(context) if v != 0])
         vw_example = f"| {context_str}"
 
         prediction = self.vw.predict(vw_example)
 
-        # With --cb_explore, VW returns a list of probabilities
         if isinstance(prediction, list):
             probs = np.array(prediction)
-            # Normalize to ensure probabilities sum to 1.0 (handle floating point errors)
             probs = probs / probs.sum()
-            # Sample action based on probabilities
             action = np.random.choice(self.n_actions, p=probs)
         else:
-            # Fallback for simple --cb (returns action directly)
             action = int(prediction) - 1
             probs = np.zeros(self.n_actions)
             probs[action] = 1.0
@@ -118,14 +114,14 @@ class VowpalWabbitBandit(ContextualBandit):
     def _predict_adf(
         self,
         context: NDArray[np.float64],
-    ) -> Tuple[int, NDArray[np.float64]]:
+    ) -> tuple[int, NDArray[np.float64]]:
         """Predict using ADF (Action Dependent Features) format.
 
         Args:
             context: Context feature vector.
 
         Returns:
-            Tuple containing selected action and action probabilities.
+            tuple containing selected action and action probabilities.
         """
         context_str = " ".join([f"{i}:{v}" for i, v in enumerate(context) if v != 0])
 
@@ -135,28 +131,18 @@ class VowpalWabbitBandit(ContextualBandit):
 
         predictions = self.vw.predict(examples)
 
-        # VW ADF returns a list of (action_index, probability) tuples
-        # or sometimes just a list of probabilities
         if isinstance(predictions, list) and len(predictions) > 0:
             if isinstance(predictions[0], tuple):
-                # Format: [(action, prob), ...]
-                # Sort by probability and take the most likely
-                sorted_preds = sorted(predictions, key=lambda x: x[1], reverse=True)
                 probs = np.zeros(self.n_actions)
                 for action_idx, prob in predictions:
                     probs[action_idx] = prob
-                # Normalize probabilities
                 probs = probs / probs.sum()
-                # Sample based on probabilities
                 action = np.random.choice(self.n_actions, p=probs)
             else:
-                # Format: [prob1, prob2, ...]
                 probs = np.array(predictions)
-                # Normalize to ensure sum is 1.0
                 probs = probs / probs.sum()
                 action = np.random.choice(self.n_actions, p=probs)
         else:
-            # Fallback: uniform random
             action = np.random.randint(self.n_actions)
             probs = np.ones(self.n_actions) / self.n_actions
 

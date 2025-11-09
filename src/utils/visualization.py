@@ -173,7 +173,7 @@ class BanditVisualizer:
         fig.update_layout(
             hovermode="x unified",
             template="plotly_white",
-            font=dict(size=12),
+            font={"size": 12},
             title_font_size=16,
         )
 

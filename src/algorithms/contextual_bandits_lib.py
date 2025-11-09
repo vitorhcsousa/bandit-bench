@@ -11,7 +11,7 @@ from contextualbandits.online import (  # type: ignore[import-untyped]
 )
 from sklearn.linear_model import SGDClassifier  # type: ignore[import-untyped]
 
-from cb_comparison.core.base import BaseContextualBandit, Context, Feedback
+from core.base import BaseContextualBandit, Context, Feedback
 
 
 class ContextualBanditsLibBandit(BaseContextualBandit):

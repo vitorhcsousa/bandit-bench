@@ -1,7 +1,6 @@
 """Tests for evaluation metrics."""
 
 import pytest
-
 from cb_comparison.evaluation import BanditMetrics
 
 

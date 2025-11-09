@@ -1,7 +1,6 @@
 """Tests for bandit implementations."""
 
 import numpy as np
-
 from cb_comparison.bandits import PyTorchBandit, RiverBandit, VowpalWabbitBandit
 
 

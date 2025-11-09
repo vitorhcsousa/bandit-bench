@@ -1,7 +1,6 @@
 """Tests for the dataset module."""
 
 import numpy as np
-
 from cb_comparison.data import MessageFeedbackDataset
 
 

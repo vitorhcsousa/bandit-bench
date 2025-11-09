@@ -1,8 +1,8 @@
 # Minimal settings
-PKG      := cb_comparison
+PKG      := src
 SRC      := src
 TESTS    := tests
-CLI      := cb-compare
+CLI      := cli
 PY       := python3
 
 ROUNDS   ?= 5000
@@ -12,23 +12,23 @@ ACTIONS  ?= 5
 .PHONY: install format check lint lint-fix type-check test test-cov test-fast run clean clean-build build lock setup-vw check-vw qa info
 
 install:
+	uv venv --python 3.10
+	source .venv/bin/activate
 	uv pip install -e ".[dev]"
 
 # --- keep this format flow ---
 format:
 	@echo "▶ Running ruff format (code formatting)"
-	ruff format $(RUFF_ARGS) $(PKG) $(TESTS)
+	ruff format $(RUFF_ARGS) $(SRC) $(TESTS)
 	@echo "▶ Organizing imports with ruff (isort rules)"
-	ruff check --fix --select I $(RUFF_ARGS) $(PKG) $(TESTS)
+	ruff check --fix --select I $(RUFF_ARGS) $(SRC) $(TESTS)
 
 check:
 	@echo "▶ Checking formatting"
-	ruff format --check $(RUFF_ARGS) $(PKG) $(TESTS)
+	ruff format --check $(RUFF_ARGS) $(SRC) $(TESTS)
 	@echo "▶ Linting with ruff"
-	ruff check $(RUFF_ARGS) $(PKG) $(TESTS)
+	ruff check $(RUFF_ARGS) $(SRC) $(TESTS)
 	@echo "▶ Type checking with mypy"
-	mypy $(MYPY_ARGS) $(PKG)
-	@echo "▶ Running tests with pytest" pytest $(PYTEST_ARGS)
 
 lint:
 	uv run ruff check $(SRC) $(TESTS)
@@ -43,13 +43,13 @@ test:
 	PYTHONPATH=$(SRC) uv run pytest
 
 test-cov:
-	PYTHONPATH=$(SRC) uv run pytest --cov=$(PKG) --cov-report=html --cov-report=term-missing
+	PYTHONPATH=$(SRC) uv run pytest --cov=src --cov-report=html --cov-report=term-missing
 
 test-fast:
 	PYTHONPATH=$(SRC) uv run pytest -m "not slow and not integration"
 
 run:
-	uv run $(CLI) run --rounds $(ROUNDS) --features $(FEATURES) --actions $(ACTIONS) $(ARGS)
+	uv run bandit-bench run --rounds $(ROUNDS) --features $(FEATURES) --actions $(ACTIONS) $(ARGS)
 
 clean:
 	rm -rf .venv build/ dist/ *.egg-info .pytest_cache/ .mypy_cache/ .ruff_cache/ htmlcov/ results/

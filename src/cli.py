@@ -1,26 +1,26 @@
 from pathlib import Path
-from typing import List, Optional
+from typing import Annotated, Optional
 
 import typer
 from rich.console import Console
 from rich.table import Table
 
-from .bandits import (
+from bandits import (
     ContextualBanditsWrapper,
     PyTorchBandit,
     RiverBandit,
 )
 
 try:
-    from .bandits import VowpalWabbitBandit
+    from bandits import VowpalWabbitBandit
 
     VOWPAL_AVAILABLE = True
 except ImportError:
     VOWPAL_AVAILABLE = False
 
-from .data import MessageFeedbackDataset
-from .evaluation import BanditComparison
-from .utils import BanditVisualizer
+from data import MessageFeedbackDataset
+from evaluation import BanditComparison
+from utils import BanditVisualizer
 
 app = typer.Typer(
     name="cb-compare",
@@ -32,28 +32,40 @@ console = Console()
 
 @app.command()
 def run(
-    n_actions: int = typer.Option(5, "--actions", "-a", help="Number of message variants/actions"),
-    context_dim: int = typer.Option(10, "--features", "-f", help="Dimension of context features"),
-    n_rounds: int = typer.Option(1000, "--rounds", "-r", help="Number of rounds per experiment"),
-    libraries: Optional[List[str]] = typer.Option(
-        None,
-        "--libraries",
-        "-l",
-        help="Libraries to compare (pytorch, vowpal, river, cb-library). Repeat flag for multiple.",
-    ),
-    explorations: Optional[List[str]] = typer.Option(
-        None,
-        "--explorations",
-        "-e",
-        help="Exploration algorithms to test. Repeat flag for multiple.",
-    ),
-    output_dir: Path = typer.Option(
-        Path("experiments/results"), "--output-dir", "-o", help="Directory to save results"
-    ),
-    seed: int = typer.Option(42, "--seed", help="Random seed for reproducibility"),
-    show_plots: bool = typer.Option(
-        True, "--show-plots/--no-show-plots", help="Show plots after experiments"
-    ),
+    n_actions: Annotated[
+        int, typer.Option("--actions", "-a", help="Number of message variants/actions")
+    ] = 5,
+    context_dim: Annotated[
+        int, typer.Option("--features", "-f", help="Dimension of context features")
+    ] = 10,
+    n_rounds: Annotated[
+        int, typer.Option("--rounds", "-r", help="Number of rounds per experiment")
+    ] = 1000,
+    libraries: Annotated[
+        Optional[list[str]],
+        typer.Option(
+            "--libraries",
+            "-l",
+            help="Libraries to compare (pytorch, vowpal, river, cb-library). Repeat flag for multiple.",
+        ),
+    ] = None,
+    explorations: Annotated[
+        Optional[list[str]],
+        typer.Option(
+            "--explorations",
+            "-e",
+            help="Exploration algorithms to test. Repeat flag for multiple.",
+        ),
+    ] = None,
+    output_dir: Annotated[
+        Path,
+        typer.Option("--output-dir", "-o", help="Directory to save results"),
+    ] = Path("experiments/results"),
+    seed: Annotated[int, typer.Option("--seed", help="Random seed for reproducibility")] = 42,
+    show_plots: Annotated[
+        bool,
+        typer.Option("--show-plots/--no-show-plots", help="Show plots after experiments"),
+    ] = True,
 ) -> None:
     """Run contextual bandits comparison experiments.
 
@@ -61,8 +73,8 @@ def run(
         n_actions: Number of message variants/actions to compare.
         context_dim: Dimensionality of context feature vectors.
         n_rounds: Number of rounds to run each experiment.
-        libraries: List of libraries to compare.
-        explorations: List of exploration algorithms to test.
+        libraries: list of libraries to compare.
+        explorations: list of exploration algorithms to test.
         output_dir: Directory where results will be saved.
         seed: Random seed for reproducibility.
         show_plots: Whether to display plots after completion.
@@ -187,7 +199,7 @@ def run(
 
 @app.command()
 def list_options() -> None:
-    """List available libraries and exploration algorithms."""
+    """list available libraries and exploration algorithms."""
     console.print("\n[bold cyan]Available Options[/bold cyan]\n")
 
     console.print("[bold yellow]Libraries:[/bold yellow]")
@@ -219,12 +231,10 @@ def list_options() -> None:
 
 @app.command()
 def visualize(
-    results_dir: Path = typer.Option(
-        Path("experiments/results"),
-        "--results-dir",
-        "-d",
-        help="Directory containing results",
-    ),
+    results_dir: Annotated[
+        Path,
+        typer.Option("--results-dir", "-d", help="Directory containing results"),
+    ] = Path("experiments/results"),
 ) -> None:
     """Generate visualizations from existing results.
 
